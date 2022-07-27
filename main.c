@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
 		print_prompt();
 		read_input(input_buffer);
 
-		if (strcmp(input_buffer->buffer, ".exit")) {
+		if (strcmp(input_buffer->buffer, ".exit") == 0) {
 			close_input_buffer(input_buffer);
 			exit(EXIT_SUCCESS);
 		}
@@ -49,7 +49,15 @@ InputBuffer* new_input_buffer() {
 void read_input(InputBuffer* input_buffer) {
 	// adding & at the end of the buffer to change the value of the pointer 
 	// inside of the struct to make it point to the new address
-	getline(&input_buffer->buffer, &input_buffer->input_length, stdin);
+	size_t input_len = getline(&input_buffer->buffer, &input_buffer->buffer_length, stdin);
+
+    if(input_len <= 0) {
+        printf("Error reading input\n");
+        exit(EXIT_FAILURE);
+    }
+
+    input_buffer->input_length = input_len - 1;
+    input_buffer->buffer[input_len - 1] = 0;
 }
 
 void close_input_buffer(InputBuffer* buffer) {
