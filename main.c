@@ -12,10 +12,35 @@ struct InputBuffer {
 
 typedef struct InputBuffer InputBuffer;
 
+typedef enum {
+	PREPARE_SUCCESS,
+	UNRECOGNIZED_SYNTAX
+} STATEMENT_PREPARE_RESULT;
+
+typedef enum {
+	INSERT,
+	SELECT
+} 
+STATEMENT_TYPE ;
+
+typedef struct Statement
+{
+	STATEMENT_TYPE type;
+} Statement;
+
 void print_prompt();
 InputBuffer* new_input_buffer();
 void close_input_buffer(InputBuffer* buffer);
 void read_input(InputBuffer* input_buffer);
+int do_meta_command(InputBuffer* input_buffer);
+STATEMENT_PREPARE_RESULT prepare_statement(char* buffer, Statement* statement);
+void execute_statement(Statement* statement);
+
+typedef enum MetaCommandResult
+{
+	META_COMMAND_SUCCESS,
+	META_UNRECOGNIZED_COMMAND
+} META_COMMAND_RESULT;
 
 int main(int argc, char** argv) {
 	InputBuffer* input_buffer = new_input_buffer();
@@ -24,12 +49,30 @@ int main(int argc, char** argv) {
 		print_prompt();
 		read_input(input_buffer);
 
-		if (strcmp(input_buffer->buffer, ".exit") == 0) {
-			close_input_buffer(input_buffer);
-			exit(EXIT_SUCCESS);
+		if (input_buffer->buffer[0] == '.') {
+			// if the type of input is meta command
+			switch(do_meta_command(input_buffer))
+			{
+				case (META_COMMAND_SUCCESS):
+					continue;
+				case (META_UNRECOGNIZED_COMMAND):
+					printf("Unrecognized Command '%s'\n", input_buffer->buffer);
+					continue;
+			}
 		}
 		else {
-			printf("Unrecognized command %s\n", input_buffer->buffer);
+			// if it's a statement
+			Statement statement;
+			switch(prepare_statement(input_buffer->buffer, &statement)) {
+				case PREPARE_SUCCESS:
+					break;
+				case UNRECOGNIZED_SYNTAX:
+					printf("Unrecognoized Syntax '%s' \n", input_buffer->buffer);
+					continue;
+			}
+
+			execute_statement(&statement);
+			printf("Executed\n");
 		}
 	}
 }
@@ -63,4 +106,38 @@ void read_input(InputBuffer* input_buffer) {
 void close_input_buffer(InputBuffer* buffer) {
 	free(buffer->buffer);
 	free(buffer);
+}
+
+// will execute the meta command
+int do_meta_command(InputBuffer* input_buffer) {
+	if(strcmp(input_buffer->buffer, ".exit") == 0) {
+		close_input_buffer(input_buffer);
+		exit(EXIT_SUCCESS);
+		return META_COMMAND_SUCCESS;
+	}
+	else {
+		return META_UNRECOGNIZED_COMMAND;
+	}
+}
+
+// check and set the type of statement found in the input query
+STATEMENT_PREPARE_RESULT prepare_statement(char* buffer, Statement* statement) {
+	if(strncmp(buffer, "Insert", 6) == 0) {
+		statement->type = INSERT;
+		return PREPARE_SUCCESS;
+	}
+	else if(strcmp(buffer, "Select")) {
+		statement->type = SELECT;
+		return PREPARE_SUCCESS;
+	}
+	return UNRECOGNIZED_SYNTAX;
+}
+
+void execute_statement(Statement* statement) {
+	switch(statement->type) {
+		case INSERT:
+			break;
+		case SELECT:
+			break;
+	} 
 }
